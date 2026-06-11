@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-import '../models/product.dart';
+import '../models/order.dart';
 
-class ProductService {
+class OrderService {
   static const String baseUrl =
       'https://s40lp1.ucc.cit.tum.de/sap/opu/odata/SAP/Z_DEV376__SU26_WMS_SRV';
 
@@ -18,22 +18,22 @@ class ProductService {
         'Authorization': basicAuth,
       };
 
-  Future<List<Product>> getProducts() async {
+  Future<List<Order>> getOrders() async {
     final response = await http.get(
-      Uri.parse('$baseUrl/ProductSet?\$format=json'),
+      Uri.parse('$baseUrl/OrderSet?\$format=json'),
       headers: headers,
     );
 
     final data = jsonDecode(response.body);
 
     return (data['d']['results'] as List)
-        .map((e) => Product.fromJson(e))
+        .map((e) => Order.fromJson(e))
         .toList();
   }
 
   Future<Map<String, String>> _getCsrfToken() async {
     final response = await http.get(
-      Uri.parse('$baseUrl/ProductSet'),
+      Uri.parse('$baseUrl/OrderSet'),
       headers: {
         'Authorization': basicAuth,
         'X-CSRF-Token': 'Fetch',
@@ -41,7 +41,6 @@ class ProductService {
     );
 
     final token = response.headers['x-csrf-token'];
-
     final cookie = response.headers['set-cookie'];
 
     if (token == null || cookie == null) {
@@ -52,33 +51,6 @@ class ProductService {
       'token': token,
       'cookie': cookie,
     };
-  }
-
-  Future<void> createProduct(Product product) async {
-    final csrf = await _getCsrfToken();
-
-    final cookie = normalizeCookie(csrf['cookie']!);
-
-    final response = await http.post(
-      Uri.parse('$baseUrl/ProductSet'),
-      headers: {
-        'Authorization': basicAuth,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-
-        'x-csrf-token': csrf['token']!,
-
-        'Cookie': cookie,
-      },
-      body: jsonEncode(product.toJson()),
-    );
-
-    if (response.statusCode != 201 &&
-        response.statusCode != 200) {
-      throw Exception(
-        'Create product failed (${response.statusCode})',
-      );
-    }
   }
 
   String normalizeCookie(String rawCookie) {
@@ -93,32 +65,79 @@ class ProductService {
     return result.join('; ');
   }
 
-  Future<void> updateProduct(Product product) async {
+  Future<void> createOrder(Order order) async {
     final csrf = await _getCsrfToken();
 
-    final cookie = normalizeCookie(
-      csrf['cookie']!,
+    final response = await http.post(
+      Uri.parse('$baseUrl/OrderSet'),
+      headers: {
+        'Authorization': basicAuth,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'x-csrf-token': csrf['token']!,
+        'Cookie': normalizeCookie(csrf['cookie']!),
+      },
+      body: jsonEncode({
+        'OrderId': order.orderId,
+        'Status': order.status,
+      }),
     );
+
+    if (response.statusCode != 201 &&
+        response.statusCode != 200) {
+      throw Exception(
+        'Create order failed (${response.statusCode})',
+      );
+    }
+  }
+
+  Future<void> updateOrder(Order order) async {
+    final csrf = await _getCsrfToken();
 
     final response = await http.put(
       Uri.parse(
-        "$baseUrl/ProductSet('${product.productId}')",
+        "$baseUrl/OrderSet('${order.orderId}')",
       ),
       headers: {
         'Authorization': basicAuth,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'x-csrf-token': csrf['token']!,
-        'Cookie': cookie,
+        'Cookie': normalizeCookie(csrf['cookie']!),
       },
-      body: jsonEncode(product.toJson()),
+      body: jsonEncode({
+        'OrderId': order.orderId,
+        'Status': order.status,
+      }),
     );
 
     if (response.statusCode != 204 &&
         response.statusCode != 200) {
       throw Exception(
-        'Update product failed (${response.statusCode})\n'
-        '${response.body}',
+        'Update order failed (${response.statusCode})',
+      );
+    }
+  }
+
+  Future<void> deleteOrder(String orderId) async {
+    final csrf = await _getCsrfToken();
+
+    final response = await http.delete(
+      Uri.parse(
+        "$baseUrl/OrderSet('$orderId')",
+      ),
+      headers: {
+        'Authorization': basicAuth,
+        'Accept': 'application/json',
+        'x-csrf-token': csrf['token']!,
+        'Cookie': normalizeCookie(csrf['cookie']!),
+      },
+    );
+
+    if (response.statusCode != 204 &&
+        response.statusCode != 200) {
+      throw Exception(
+        'Delete order failed (${response.statusCode})',
       );
     }
   }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/product.dart';
 import '../../services/product_service.dart';
 import '../products/add_product_screen.dart';
+import 'edit_product_screen.dart';
 
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
@@ -227,6 +228,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 scrollDirection:
                     Axis.horizontal,
                 child: DataTable(
+                  showCheckboxColumn: false,
                   headingRowColor:
                       MaterialStateProperty.all(
                     Colors.grey.shade200,
@@ -251,14 +253,25 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         product.quantity <= 10;
 
                     return DataRow(
-                      color:
-                          MaterialStateProperty
-                              .resolveWith(
-                        (states) =>
-                            isLowStock
-                                ? Colors.red
-                                    .shade50
-                                : null,
+                      onSelectChanged: (_) async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AddProductScreen(
+                              product: product,
+                            ),
+                          ),
+                        );
+
+                        if (result == true) {
+                          loadProducts();
+                        }
+                      },
+
+                      color: MaterialStateProperty.resolveWith(
+                        (states) => isLowStock
+                            ? Colors.red.shade50
+                            : null,
                       ),
                       cells: [
                         DataCell(

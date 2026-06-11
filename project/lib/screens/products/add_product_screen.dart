@@ -4,7 +4,12 @@ import '../../models/product.dart';
 import '../../services/product_service.dart';
 
 class AddProductScreen extends StatefulWidget {
-  const AddProductScreen({super.key});
+  final Product? product;
+
+  const AddProductScreen({
+    super.key,
+    this.product,
+  });
 
   @override
   State<AddProductScreen> createState() =>
@@ -25,6 +30,31 @@ class _AddProductScreenState
   final priceController = TextEditingController();
 
   bool isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.product != null) {
+      idController.text =
+          widget.product!.productId;
+
+      nameController.text =
+          widget.product!.productName;
+
+      descController.text =
+          widget.product!.description;
+
+      quantityController.text =
+          widget.product!.quantity.toString();
+
+      shelfController.text =
+          widget.product!.shelfLocation;
+
+      priceController.text =
+          widget.product!.price.toString();
+    }
+  }
 
   Future<void> saveProduct() async {
     if (!_formKey.currentState!.validate()) {
@@ -49,7 +79,11 @@ class _AddProductScreenState
         ),
       );
 
-      await service.createProduct(product);
+      if (widget.product == null) {
+        await service.createProduct(product);
+      } else {
+        await service.updateProduct(product);
+      }
 
       if (!mounted) return;
 
@@ -111,8 +145,10 @@ class _AddProductScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Add Product',
+        title: Text(
+          widget.product == null
+              ? 'Add Product'
+              : 'Edit Product',
         ),
       ),
       body: Form(
@@ -124,8 +160,8 @@ class _AddProductScreenState
 
             TextFormField(
               controller: idController,
-              decoration:
-                  buildDecoration(
+              enabled: widget.product == null,
+              decoration: buildDecoration(
                 'Product ID',
               ),
               validator: (value) {
@@ -243,12 +279,13 @@ class _AddProductScreenState
                     isSaving
                         ? null
                         : saveProduct,
-                child:
-                    isSaving
-                        ? const CircularProgressIndicator()
-                        : const Text(
-                            'Save Product',
-                          ),
+                child: isSaving
+                  ? const CircularProgressIndicator()
+                  : Text(
+                      widget.product == null
+                          ? 'Save Product'
+                          : 'Update Product',
+                    ),
               ),
             ),
           ],
