@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../screens/home_screen.dart';
 import '../screens/products/product_list_screen.dart';
 import '../screens/orders/order_list_screen.dart';
+import '../screens/picking/picking_summary_screen.dart';
 
 class BottomNav extends StatefulWidget {
   const BottomNav({super.key});
@@ -18,15 +19,32 @@ class _BottomNavState extends State<BottomNav> {
     HomeScreen(),
     ProductListScreen(),
     OrderListScreen(),
+    PickingSummaryScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: pages[currentIndex],
+      resizeToAvoidBottomInset: false,
+
+      body: IndexedStack(
+        index: currentIndex,
+        children: [
+          HomeScreen(),
+          ProductListScreen(),
+          OrderListScreen(),
+          PickingSummaryScreen(
+            key: ValueKey(currentIndex),
+          ),
+        ],
+      ),
+
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: currentIndex,
-        onTap: (index) {
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        onTap: (index) async {
           setState(() {
             currentIndex = index;
           });
@@ -43,6 +61,10 @@ class _BottomNavState extends State<BottomNav> {
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt_long),
             label: 'Orders',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.local_shipping),
+            label: 'Picking',
           ),
         ],
       ),
