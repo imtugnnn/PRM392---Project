@@ -11,7 +11,8 @@ import '../../services/order_item_service.dart';
 import '../../services/product_service.dart';
 
 class CreateOrderScreen extends StatefulWidget {
-  const CreateOrderScreen({super.key});
+  final Order? order;
+  const CreateOrderScreen({super.key, this.order});
 
   @override
   State<CreateOrderScreen> createState() =>
@@ -26,6 +27,11 @@ class _CreateOrderScreenState
   final ProductService _productService = ProductService();
   final OrderItemService _orderItemService =
     OrderItemService();
+  bool get isCompleted =>
+    widget.order?.status == 'COMPLETED';
+
+  bool get isEdit =>
+    widget.order != null;
 
   String status = 'NEW';
 
@@ -38,9 +44,20 @@ class _CreateOrderScreenState
   ];
 
   @override
-  void initState() {
-    super.initState();
-    loadProducts();
+    void initState() {
+      super.initState();
+
+      initData();
+    }
+
+    Future<void> initData() async {
+    await loadProducts();
+
+    if (widget.order != null) {
+      status = widget.order!.status;
+
+      await loadOrderDetails();
+    }
   }
 
   Future<void> loadProducts() async {
@@ -155,6 +172,79 @@ class _CreateOrderScreenState
     }
   }
 
+  Future<void> loadOrderDetails() async {
+    if (widget.order == null) return;
+
+    final items =
+        await _orderItemService.getByOrderId(
+      widget.order!.orderId,
+    );
+
+    setState(() {
+      orderItems =
+          items.map((item) {
+            final product = products.firstWhere(
+              (p) =>
+                  p.productId ==
+                  item.productId,
+            );
+
+            return OrderItemForm(
+              productId: item.productId,
+              productName:
+                  product.productName,
+              quantity: item.quantity,
+              unitPrice:
+                  item.unitPrice,
+            );
+          }).toList();
+    });
+  }
+
+  Future<void> updateOrder() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      await _orderService.updateOrder(
+        Order(
+          orderId: widget.order!.orderId,
+          orderDate: widget.order!.orderDate,
+          status: status,
+        ),
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Order updated successfully',
+          ),
+        ),
+      );
+
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Update failed: $e',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
   Widget buildOrderItemCard(
     int index,
   ) {
@@ -169,6 +259,7 @@ class _CreateOrderScreenState
         child: Column(
           children: [
             DropdownSearch<Product>(
+              enabled: !isCompleted,
               items: products,
               itemAsString: (Product p) => p.productName,
 
@@ -216,6 +307,7 @@ class _CreateOrderScreenState
             const SizedBox(height: 12),
 
             TextFormField(
+              enabled: !isCompleted,
               initialValue:
                   item.quantity.toString(),
               keyboardType:
@@ -264,13 +356,13 @@ class _CreateOrderScreenState
                     Icons.delete,
                     color: Colors.red,
                   ),
-                  onPressed: () {
-                    setState(() {
-                      orderItems.removeAt(
-                        index,
-                      );
-                    });
-                  },
+                  onPressed: isCompleted
+                    ? null
+                    : () {
+                        setState(() {
+                          orderItems.removeAt(index);
+                        });
+                      },
                 ),
               ),
           ],
@@ -285,8 +377,12 @@ class _CreateOrderScreenState
   ) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Create Order',
+        title: Text(
+          !isEdit
+              ? 'Create Order'
+              : isCompleted
+                  ? 'Order Details'
+                  : 'Edit Order',
         ),
       ),
       body: SingleChildScrollView(
@@ -318,13 +414,15 @@ class _CreateOrderScreenState
                         Text('COMPLETED'),
                   ),
                 ],
-                onChanged: (value) {
-                  if (value == null) return;
+                onChanged: isCompleted
+                  ? null
+                  : (value) {
+                      if (value == null) return;
 
-                  setState(() {
-                    status = value;
-                  });
-                },
+                      setState(() {
+                        status = value;
+                      });
+                    },
               ),
 
               const SizedBox(height: 24),
@@ -349,18 +447,18 @@ class _CreateOrderScreenState
               ),
 
               OutlinedButton.icon(
-                onPressed: () {
-                  setState(() {
-                    orderItems.add(
-                      OrderItemForm.empty(),
-                    );
-                  });
-                },
+                onPressed: isCompleted
+                    ? null
+                    : () {
+                        setState(() {
+                          orderItems.add(
+                            OrderItemForm.empty(),
+                          );
+                        });
+                      },
                 icon:
                     const Icon(Icons.add),
-                label: const Text(
-                  'Add Item',
-                ),
+                label: const Text('Add Item'),
               ),
 
               const SizedBox(height: 20),
@@ -388,9 +486,11 @@ class _CreateOrderScreenState
                 child:
                     ElevatedButton.icon(
                   onPressed:
-                      isLoading
-                          ? null
-                          : createOrder,
+                    isLoading || isCompleted
+                        ? null
+                        : (isEdit
+                            ? updateOrder
+                            : createOrder),
                   icon: isLoading
                       ? const SizedBox(
                           width: 20,
@@ -404,8 +504,12 @@ class _CreateOrderScreenState
                       : const Icon(
                           Icons.save,
                         ),
-                  label: const Text(
-                    'Create Order',
+                  label: Text(
+                    !isEdit
+                        ? 'Create Order'
+                        : isCompleted
+                            ? 'Completed'
+                            : 'Update Order',
                   ),
                 ),
               ),

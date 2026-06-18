@@ -160,10 +160,11 @@ class _PickingSummaryScreenState
                       padding: const EdgeInsets.all(8),
                       child: Table(
                         columnWidths: const {
-                          0: FlexColumnWidth(2), // ID
-                          1: FlexColumnWidth(4), // Product
-                          2: FlexColumnWidth(2), // Shelf
-                          3: FlexColumnWidth(1), // Qty
+                          0: FlexColumnWidth(2),
+                          1: FlexColumnWidth(5),
+                          2: FlexColumnWidth(2),
+                          3: FlexColumnWidth(2), // Stock
+                          4: FlexColumnWidth(2), // Qty
                         },
                         border: TableBorder(
                           horizontalInside: BorderSide(
@@ -210,40 +211,95 @@ class _PickingSummaryScreenState
                                   ),
                                 ),
                               ),
+                              Padding(
+                                padding: EdgeInsets.all(12),
+                                child: Text(
+                                  'Stock',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
 
                           ...items.map(
-                            (item) => TableRow(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Text(item.productId),
+                            (item) {
+                              final bool isShortage =
+                                  item.shortageQuantity > 0;
+
+                              return TableRow(
+                                decoration: BoxDecoration(
+                                  color: isShortage
+                                      ? Colors.red.shade50
+                                      : null,
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Text(item.productName),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8),
-                                  child: Chip(
-                                    label: Text(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Text(item.productId),
+                                  ),
+
+                                  Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.productName,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+
+                                        if (isShortage)
+                                          Text(
+                                            'Thiếu ${item.shortageQuantity} sản phẩm',
+                                            style: const TextStyle(
+                                              color: Colors.red,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Text(
                                       item.shelfLocation,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Text(
-                                    item.totalQuantity.toString(),
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
+
+                                  Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Text(
+                                      item.totalQuantity.toString(),
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: isShortage
+                                            ? Colors.red
+                                            : Colors.black,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
+
+                                  Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Text(
+                                      item.stockQuantity.toString(),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ],
                       ),

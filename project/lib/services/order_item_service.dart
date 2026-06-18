@@ -98,4 +98,31 @@ class OrderItemService {
 
     return result.join('; ');
   }
+
+  Future<List<OrderItem>> getByOrderId(
+    String orderId,
+  ) async {
+    final response = await http.get(
+      Uri.parse(
+        '$baseUrl/OrderItemSet?\$filter=OrderId eq \'$orderId\'&\$format=json',
+      ),
+      headers: {
+        'Authorization': basicAuth,
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Load order items failed');
+    }
+
+    final data =
+        jsonDecode(response.body)['d']['results'];
+
+    return data
+        .map<OrderItem>(
+          (e) => OrderItem.fromJson(e),
+        )
+        .toList();
+  }
 }

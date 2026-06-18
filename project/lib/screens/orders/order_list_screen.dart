@@ -129,22 +129,25 @@ class _OrderListScreenState extends State<OrderListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Orders'),
-      ),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  const CreateOrderScreen(),
-            ),
-          );
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Create Order',
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const CreateOrderScreen(),
+                ),
+              );
 
-          if (result == true) {
-            loadOrders();
-          }
-        },
+              if (result == true) {
+                loadOrders();
+              }
+            },
+          ),
+        ],
       ),
       body: isLoading
           ? const Center(
@@ -250,6 +253,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                       scrollDirection:
                           Axis.horizontal,
                       child: DataTable(
+                        showCheckboxColumn: false,
                         columns: const [
                           DataColumn(
                             label: Text('ID'),
@@ -267,6 +271,28 @@ class _OrderListScreenState extends State<OrderListScreen> {
                         rows: filteredOrders.map(
                           (order) {
                             return DataRow(
+                              color: WidgetStateProperty.resolveWith<Color?>(
+                                (states) {
+                                  if (order.status == 'COMPLETED') {
+                                    return Colors.green.shade50;
+                                  }
+                                  return null;
+                                },
+                              ),
+                              onSelectChanged: (_) async {
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => CreateOrderScreen(
+                                      order: order,
+                                    ),
+                                  ),
+                                );
+
+                                if (result == true) {
+                                  loadOrders();
+                                }
+                              },
                               cells: [
                                 DataCell(
                                   Text(order.orderId),
@@ -283,15 +309,16 @@ class _OrderListScreenState extends State<OrderListScreen> {
                                 ),
                                 DataCell(
                                   IconButton(
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.delete,
-                                      color: Colors.red,
+                                      color: order.status == 'COMPLETED'
+                                          ? Colors.grey
+                                          : Colors.red,
                                     ),
-                                    onPressed: () =>
-                                        deleteOrder(
-                                      order.orderId,
-                                    ),
-                                  ),
+                                    onPressed: order.status == 'COMPLETED'
+                                        ? null
+                                        : () => deleteOrder(order.orderId),
+                                  )
                                 ),
                               ],
                             );
