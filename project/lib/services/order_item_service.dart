@@ -119,10 +119,14 @@ class OrderItemService {
     final data =
         jsonDecode(response.body)['d']['results'];
 
-    return data
+    final allItems = data
         .map<OrderItem>(
           (e) => OrderItem.fromJson(e),
         )
         .toList();
+
+    return allItems.where(
+      (e) => e.orderId == orderId,
+    ).toList();
   }
 }

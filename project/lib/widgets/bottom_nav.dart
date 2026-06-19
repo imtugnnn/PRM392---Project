@@ -27,17 +27,24 @@ class _BottomNavState extends State<BottomNav> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
 
-      body: IndexedStack(
-        index: currentIndex,
-        children: [
-          HomeScreen(),
-          ProductListScreen(),
-          OrderListScreen(),
-          PickingSummaryScreen(
-            key: ValueKey(currentIndex),
+      body: [
+        const HomeScreen(),
+        ProductListScreen(
+          key: ValueKey(
+            'product_$currentIndex',
           ),
-        ],
-      ),
+        ),
+        OrderListScreen(
+          key: ValueKey(
+            'order_$currentIndex',
+          ),
+        ),
+        PickingSummaryScreen(
+          key: ValueKey(
+            'picking_$currentIndex',
+          ),
+        ),
+      ][currentIndex],
 
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,

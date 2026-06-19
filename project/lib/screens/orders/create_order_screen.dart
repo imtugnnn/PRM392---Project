@@ -17,6 +17,7 @@ class CreateOrderScreen extends StatefulWidget {
   @override
   State<CreateOrderScreen> createState() =>
       _CreateOrderScreenState();
+      
 }
 
 class _CreateOrderScreenState
@@ -33,8 +34,6 @@ class _CreateOrderScreenState
   bool get isEdit =>
     widget.order != null;
 
-  String status = 'NEW';
-
   bool isLoading = false;
 
   List<Product> products = [];
@@ -42,6 +41,14 @@ class _CreateOrderScreenState
   List<OrderItemForm> orderItems = [
     OrderItemForm.empty(),
   ];
+
+  @override
+  void dispose() {
+    for (final item in orderItems) {
+      item.quantityController.dispose();
+    }
+    super.dispose();
+  }
 
   @override
     void initState() {
@@ -54,8 +61,6 @@ class _CreateOrderScreenState
     await loadProducts();
 
     if (widget.order != null) {
-      status = widget.order!.status;
-
       await loadOrderDetails();
     }
   }
@@ -88,6 +93,112 @@ class _CreateOrderScreenState
     );
   }
 
+  Future<void> markAsCompleted() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Complete Order'),
+        content: const Text(
+          'This will deduct stock quantities. Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () =>
+                Navigator.pop(context, true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+        try {
+          setState(() {
+            isLoading = true;
+          });
+
+          final items =
+              await _orderItemService.getByOrderId(
+            widget.order!.orderId,
+          );
+
+          // Kiểm tra tồn kho
+          for (final item in items) {
+            final product = products.firstWhere(
+              (p) => p.productId == item.productId,
+            );
+
+            if (product.quantity < item.quantity) {
+              throw Exception(
+                'Not enough stock for ${product.productName}',
+              );
+            }
+          }
+
+      // Trừ tồn kho
+      for (final item in items) {
+        final product = products.firstWhere(
+          (p) => p.productId == item.productId,
+        );
+
+        final updatedProduct = Product(
+          productId: product.productId,
+          productName: product.productName,
+          description: product.description,
+          quantity:
+              product.quantity - item.quantity,
+          shelfLocation:
+              product.shelfLocation,
+          price: product.price,
+        );
+
+        await _productService.updateProduct(
+          updatedProduct,
+        );
+      }
+
+      // Chuyển trạng thái Order
+      await _orderService.updateOrder(
+        Order(
+          orderId: widget.order!.orderId,
+          orderDate: widget.order!.orderDate,
+          status: 'COMPLETED',
+        ),
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Order completed successfully',
+          ),
+        ),
+      );
+
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$e'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
   Future<void> createOrder() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -113,7 +224,7 @@ class _CreateOrderScreenState
     try {
       final order = Order(
         orderId: '',
-        status: status,
+        status: 'NEW',
         orderDate: '',
       );
 
@@ -173,12 +284,16 @@ class _CreateOrderScreenState
   }
 
   Future<void> loadOrderDetails() async {
+    
     if (widget.order == null) return;
 
     final items =
         await _orderItemService.getByOrderId(
       widget.order!.orderId,
     );
+
+    print('OrderId: ${widget.order!.orderId}');
+    print('Items loaded: ${items.length}');
 
     setState(() {
       orderItems =
@@ -201,54 +316,16 @@ class _CreateOrderScreenState
     });
   }
 
-  Future<void> updateOrder() async {
-    try {
-      setState(() {
-        isLoading = true;
-      });
-
-      await _orderService.updateOrder(
-        Order(
-          orderId: widget.order!.orderId,
-          orderDate: widget.order!.orderDate,
-          status: status,
-        ),
-      );
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Order updated successfully',
-          ),
-        ),
-      );
-
-      Navigator.pop(context, true);
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Update failed: $e',
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
-    }
-  }
-
   Widget buildOrderItemCard(
     int index,
   ) {
     final item = orderItems[index];
+    print(
+      'CARD => '
+      '${item.productName} | '
+      'qty=${item.quantity} | '
+      'price=${item.unitPrice}',
+    );
 
     return Card(
       margin: const EdgeInsets.only(
@@ -294,35 +371,33 @@ class _CreateOrderScreenState
                 if (product == null) return;
 
                 setState(() {
-                  item.productId =
-                      product.productId;
-                  item.productName =
-                      product.productName;
-                  item.unitPrice =
-                      product.price;
+                  item.productId = product.productId;
+                  item.productName = product.productName;
+                  item.unitPrice = product.price;
+
+                  item.quantity = 1;
+                  item.quantityController.text = '1';
                 });
-              },
+              }
             ),
 
             const SizedBox(height: 12),
 
             TextFormField(
               enabled: !isCompleted,
-              initialValue:
-                  item.quantity.toString(),
-              keyboardType:
-                  TextInputType.number,
-              decoration:
-                  const InputDecoration(
+              controller: item.quantityController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
                 labelText: 'Quantity',
-                border:
-                    OutlineInputBorder(),
+                border: OutlineInputBorder(),
               ),
               onChanged: (value) {
+                final qty = int.tryParse(value);
+
                 setState(() {
-                  item.quantity =
-                      int.tryParse(value) ??
-                          1;
+                  item.quantity = qty == null || qty <= 0
+                      ? 1
+                      : qty;
                 });
               },
             ),
@@ -394,37 +469,6 @@ class _CreateOrderScreenState
             crossAxisAlignment:
                 CrossAxisAlignment.start,
             children: [
-              DropdownButtonFormField<
-                  String>(
-                value: status,
-                decoration:
-                    const InputDecoration(
-                  labelText: 'Status',
-                  border:
-                      OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'NEW',
-                    child: Text('NEW'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'COMPLETED',
-                    child:
-                        Text('COMPLETED'),
-                  ),
-                ],
-                onChanged: isCompleted
-                  ? null
-                  : (value) {
-                      if (value == null) return;
-
-                      setState(() {
-                        status = value;
-                      });
-                    },
-              ),
-
               const SizedBox(height: 24),
 
               const Text(
@@ -463,56 +507,97 @@ class _CreateOrderScreenState
 
               const SizedBox(height: 20),
 
-              Align(
-                alignment:
-                    Alignment.centerRight,
-                child: Text(
-                  'Order Total: ${orderTotal.toStringAsFixed(2)}',
-                  style:
-                      const TextStyle(
-                    fontSize: 20,
-                    fontWeight:
-                        FontWeight.bold,
+              Card(
+                color: Colors.grey.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Order Total',
+                            style: TextStyle(
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            orderTotal.toStringAsFixed(2),
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      if (isEdit && !isCompleted)
+                        ElevatedButton.icon(
+                          icon: const Icon(
+                            Icons.check_circle,
+                          ),
+                          label: const Text(
+                            'Mark as Completed',
+                          ),
+                          onPressed: markAsCompleted,
+                        ),
+
+                      if (isCompleted)
+                        Container(
+                          padding:
+                              const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius:
+                                BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(
+                                Icons.check_circle,
+                                color: Colors.green,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Order Completed',
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              SizedBox(
-                width:
-                    double.infinity,
-                height: 50,
-                child:
-                    ElevatedButton.icon(
-                  onPressed:
-                    isLoading || isCompleted
+              if (!isEdit)
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    onPressed: isLoading
                         ? null
-                        : (isEdit
-                            ? updateOrder
-                            : createOrder),
-                  icon: isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child:
-                              CircularProgressIndicator(
-                            strokeWidth:
-                                2,
-                          ),
-                        )
-                      : const Icon(
-                          Icons.save,
-                        ),
-                  label: Text(
-                    !isEdit
-                        ? 'Create Order'
-                        : isCompleted
-                            ? 'Completed'
-                            : 'Update Order',
+                        : createOrder,
+                    icon: isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child:
+                                CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(Icons.save),
+                    label:
+                        const Text('Create Order'),
                   ),
                 ),
-              ),
             ],
           ),
         ),
