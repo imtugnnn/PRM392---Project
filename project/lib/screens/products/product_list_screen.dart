@@ -49,10 +49,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   void applyFilter() {
     setState(() {
+      final keyword = searchText.trim().toLowerCase();
+
       filteredProducts = products.where((product) {
-        final matchSearch = product.productName
-            .toLowerCase()
-            .contains(searchText.toLowerCase());
+        final matchSearch =
+            product.productId.toLowerCase().contains(keyword) ||
+            product.productName.toLowerCase().contains(keyword);
 
         final matchStock =
             !lowStockOnly || product.quantity <= 10;
@@ -224,10 +226,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
               const SizedBox(height: 16),
 
               /// TABLE
-              SingleChildScrollView(
-                scrollDirection:
-                    Axis.horizontal,
-                child: DataTable(
+              DataTable(
                   showCheckboxColumn: false,
                   headingRowColor:
                       MaterialStateProperty.all(
@@ -240,12 +239,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         label: Text('Name')),
                     DataColumn(
                         label: Text('Description')),
-                    DataColumn(
-                        label: Text('Qty')),
-                    DataColumn(
-                        label: Text('Shelf')),
-                    DataColumn(
-                        label: Text('Price')),
                   ],
                   rows: filteredProducts
                       .map((product) {
@@ -275,61 +268,27 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       ),
                       cells: [
                         DataCell(
-                          Text(
-                              product.productId),
+                          Text(product.productId),
                         ),
 
                         DataCell(
-                          Text(product
-                              .productName),
+                          Text(product.productName),
                         ),
 
                         DataCell(
                           SizedBox(
-                            width: 150,
-                            child: Text(product
-                                .description),
+                            width: 250,
+                            child: Text(
+                              product.description,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                            ),
                           ),
-                        ),
-
-                        DataCell(
-                          Row(
-                            children: [
-                              Text(product
-                                  .quantity
-                                  .toString()),
-                              if (isLowStock)
-                                const Padding(
-                                  padding:
-                                      EdgeInsets.only(
-                                    left: 5,
-                                  ),
-                                  child: Icon(
-                                    Icons.warning,
-                                    color:
-                                        Colors.red,
-                                    size: 18,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-
-                        DataCell(
-                          Text(product
-                              .shelfLocation),
-                        ),
-
-                        DataCell(
-                          Text(product.price
-                              .toStringAsFixed(
-                                  0)),
                         ),
                       ],
                     );
                   }).toList(),
                 ),
-              ),
             ],
           ),
         ),

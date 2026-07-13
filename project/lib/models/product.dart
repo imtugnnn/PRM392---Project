@@ -36,4 +36,22 @@ class Product {
       'Price': price.toStringAsFixed(2),
     };
   }
+
+  Product copyWith({
+    String? productId,
+    String? productName,
+    String? description,
+    int? quantity,
+    String? shelfLocation,
+    double? price,
+  }) {
+    return Product(
+      productId: productId ?? this.productId,
+      productName: productName ?? this.productName,
+      description: description ?? this.description,
+      quantity: quantity ?? this.quantity,
+      shelfLocation: shelfLocation ?? this.shelfLocation,
+      price: price ?? this.price,
+    );
+  }
 }

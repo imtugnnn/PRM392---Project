@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-import '../models/product.dart';
+import '../models/goods_receipt.dart';
 
-class ProductService {
+class GoodsReceiptService {
   static const String baseUrl =
       'https://s40lp1.ucc.cit.tum.de/sap/opu/odata/SAP/Z_DEV376__SU26_WMS_SRV';
 
@@ -18,45 +18,26 @@ class ProductService {
         'Authorization': basicAuth,
       };
 
-  Future<List<Product>> getProducts() async {
+  Future<List<GoodsReceipt>> getGoodsReceipts() async {
     final response = await http.get(
-      Uri.parse('$baseUrl/ProductSet?\$format=json'),
+      Uri.parse('$baseUrl/GoodsReceiptSet?\$format=json'),
       headers: headers,
     );
+
+    if (response.statusCode != 200) {
+      throw Exception(response.body);
+    }
 
     final data = jsonDecode(response.body);
 
     return (data['d']['results'] as List)
-        .map((e) => Product.fromJson(e))
+        .map((e) => GoodsReceipt.fromJson(e))
         .toList();
-  }
-
-  Future<Product> getById(String productId) async {
-    final response = await http.get(
-      Uri.parse(
-        "$baseUrl/ProductSet('$productId')?\$format=json",
-      ),
-      headers: headers,
-    );
-
-    if (response.statusCode == 404) {
-      throw Exception("Product not found");
-    }
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        "Get product failed (${response.statusCode})\n${response.body}",
-      );
-    }
-
-    final data = jsonDecode(response.body);
-
-    return Product.fromJson(data['d']);
   }
 
   Future<Map<String, String>> _getCsrfToken() async {
     final response = await http.get(
-      Uri.parse('$baseUrl/ProductSet'),
+      Uri.parse('$baseUrl/GoodsReceiptSet'),
       headers: {
         'Authorization': basicAuth,
         'X-CSRF-Token': 'Fetch',
@@ -64,7 +45,6 @@ class ProductService {
     );
 
     final token = response.headers['x-csrf-token'];
-
     final cookie = response.headers['set-cookie'];
 
     if (token == null || cookie == null) {
@@ -77,31 +57,84 @@ class ProductService {
     };
   }
 
-  Future<void> createProduct(Product product) async {
+  Future<GoodsReceipt> createGoodsReceipt(
+      GoodsReceipt goodsReceipt) async {
     final csrf = await _getCsrfToken();
 
     final cookie = normalizeCookie(csrf['cookie']!);
 
     final response = await http.post(
-      Uri.parse('$baseUrl/ProductSet'),
+      Uri.parse('$baseUrl/GoodsReceiptSet'),
       headers: {
         'Authorization': basicAuth,
-        'Content-Type': 'application/json',
         'Accept': 'application/json',
-
+        'Content-Type': 'application/json',
         'x-csrf-token': csrf['token']!,
-
         'Cookie': cookie,
       },
-      body: jsonEncode(product.toJson()),
+      body: jsonEncode(goodsReceipt.toJson()),
     );
 
     if (response.statusCode != 201 &&
         response.statusCode != 200) {
       throw Exception(
-        'Create product failed (${response.statusCode})',
+        'Create Goods Receipt failed (${response.statusCode})\n'
+        '${response.body}',
       );
     }
+
+    final data = jsonDecode(response.body);
+
+    return GoodsReceipt.fromJson(data['d']);
+  }
+
+  Future<void> updateGoodsReceipt(
+      GoodsReceipt goodsReceipt) async {
+    final csrf = await _getCsrfToken();
+
+    final cookie = normalizeCookie(csrf['cookie']!);
+    print(jsonEncode(goodsReceipt.toJson()));
+    final response = await http.put(
+      Uri.parse(
+          "$baseUrl/GoodsReceiptSet('${goodsReceipt.grId}')"),
+      headers: {
+        'Authorization': basicAuth,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'x-csrf-token': csrf['token']!,
+        'Cookie': cookie,
+      },
+      body: jsonEncode(goodsReceipt.toJson()),
+    );
+
+    if (response.statusCode != 204 &&
+        response.statusCode != 200) {
+      throw Exception(
+        'Update Goods Receipt failed (${response.statusCode})\n'
+        '${response.body}',
+      );
+    }
+  }
+
+  Future<GoodsReceipt?> getGoodsReceiptById(
+      String grId) async {
+    final response = await http.get(
+      Uri.parse(
+          "$baseUrl/GoodsReceiptSet('$grId')?\$format=json"),
+      headers: headers,
+    );
+
+    if (response.statusCode == 404) {
+      return null;
+    }
+
+    if (response.statusCode != 200) {
+      throw Exception(response.body);
+    }
+
+    final data = jsonDecode(response.body);
+
+    return GoodsReceipt.fromJson(data['d']);
   }
 
   String normalizeCookie(String rawCookie) {
@@ -114,35 +147,5 @@ class ProductService {
     }
 
     return result.join('; ');
-  }
-
-  Future<void> updateProduct(Product product) async {
-    final csrf = await _getCsrfToken();
-
-    final cookie = normalizeCookie(
-      csrf['cookie']!,
-    );
-
-    final response = await http.put(
-      Uri.parse(
-        "$baseUrl/ProductSet('${product.productId}')",
-      ),
-      headers: {
-        'Authorization': basicAuth,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'x-csrf-token': csrf['token']!,
-        'Cookie': cookie,
-      },
-      body: jsonEncode(product.toJson()),
-    );
-
-    if (response.statusCode != 204 &&
-        response.statusCode != 200) {
-      throw Exception(
-        'Update product failed (${response.statusCode})\n'
-        '${response.body}',
-      );
-    }
   }
 }

@@ -249,37 +249,42 @@ class _OrderListScreenState extends State<OrderListScreen> {
 
                     const SizedBox(height: 16),
 
-                    SingleChildScrollView(
-                      scrollDirection:
-                          Axis.horizontal,
-                      child: DataTable(
-                        showCheckboxColumn: false,
-                        columns: const [
-                          DataColumn(
-                            label: Text('ID'),
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: filteredOrders.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final order = filteredOrders[index];
+                        final isCompleted = order.status == 'COMPLETED';
+
+                        return Dismissible(
+                          key: ValueKey(order.orderId),
+                          direction: isCompleted
+                              ? DismissDirection.none
+                              : DismissDirection.endToStart,
+                          confirmDismiss: (_) async {
+                            await deleteOrder(order.orderId);
+                            return false;
+                          },
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.delete,
+                              color: Colors.white,
+                            ),
                           ),
-                          DataColumn(
-                            label: Text('Status'),
-                          ),
-                          DataColumn(
-                            label: Text('Date'),
-                          ),
-                          DataColumn(
-                            label: Text('Action'),
-                          ),
-                        ],
-                        rows: filteredOrders.map(
-                          (order) {
-                            return DataRow(
-                              color: WidgetStateProperty.resolveWith<Color?>(
-                                (states) {
-                                  if (order.status == 'COMPLETED') {
-                                    return Colors.green.shade50;
-                                  }
-                                  return null;
-                                },
-                              ),
-                              onSelectChanged: (_) async {
+                          child: Card(
+                            color: isCompleted
+                                ? Colors.green.shade50
+                                : null,
+                            child: ListTile(
+                              onTap: () async {
                                 final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -293,39 +298,26 @@ class _OrderListScreenState extends State<OrderListScreen> {
                                   loadOrders();
                                 }
                               },
-                              cells: [
-                                DataCell(
-                                  Text(order.orderId),
+                              title: Text(
+                                order.orderId,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                DataCell(
-                                  Text(order.status),
-                                ),
-                                DataCell(
-                                  Text(
-                                    formatDate(
-                                      order.orderDate,
-                                    ),
-                                  ),
-                                ),
-                                DataCell(
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.delete,
-                                      color: order.status == 'COMPLETED'
-                                          ? Colors.grey
-                                          : Colors.red,
-                                    ),
-                                    onPressed: order.status == 'COMPLETED'
-                                        ? null
-                                        : () => deleteOrder(order.orderId),
-                                  )
-                                ),
-                              ],
-                            );
-                          },
-                        ).toList(),
-                      ),
-                    ),
+                              ),
+                              subtitle: Text(
+                                formatDate(order.orderDate),
+                              ),
+                              trailing: Chip(
+                                label: Text(order.status),
+                                backgroundColor: isCompleted
+                                    ? Colors.green.shade100
+                                    : Colors.orange.shade100,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    )
                   ],
                 ),
               ),

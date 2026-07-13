@@ -4,6 +4,7 @@ import '../screens/home_screen.dart';
 import '../screens/products/product_list_screen.dart';
 import '../screens/orders/order_list_screen.dart';
 import '../screens/picking/picking_summary_screen.dart';
+import '../screens/goods_receipt/goods_receipt_list_screen.dart';
 
 class BottomNav extends StatefulWidget {
   const BottomNav({super.key});
@@ -18,6 +19,7 @@ class _BottomNavState extends State<BottomNav> {
   final List<Widget> pages = const [
     HomeScreen(),
     ProductListScreen(),
+    GoodsReceiptListScreen(),
     OrderListScreen(),
     PickingSummaryScreen(),
   ];
@@ -33,6 +35,9 @@ class _BottomNavState extends State<BottomNav> {
           key: ValueKey(
             'product_$currentIndex',
           ),
+        ),
+        GoodsReceiptListScreen(
+          key: ValueKey('gr_$currentIndex'),
         ),
         OrderListScreen(
           key: ValueKey(
@@ -64,6 +69,10 @@ class _BottomNavState extends State<BottomNav> {
           BottomNavigationBarItem(
             icon: Icon(Icons.inventory_2),
             label: 'Products',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.move_to_inbox),
+            label: 'GR',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt_long),
