@@ -143,168 +143,252 @@ class _PickingSummaryScreenState
 
                   const SizedBox(height: 20),
 
-                  const Text(
-                    'Picking List',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight:
-                          FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
                   Card(
-                    elevation: 2,
+                    elevation: 0,
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Table(
-                        columnWidths: const {
-                          0: FlexColumnWidth(2),
-                          1: FlexColumnWidth(5),
-                          2: FlexColumnWidth(2),
-                          3: FlexColumnWidth(2), // Stock
-                          4: FlexColumnWidth(2), // Qty
-                        },
-                        border: TableBorder(
-                          horizontalInside: BorderSide(
-                            color: Colors.grey.shade300,
-                          ),
-                        ),
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
                         children: [
-                          const TableRow(
-                            children: [
-                              Padding(
-                                padding: EdgeInsets.all(12),
-                                child: Text(
-                                  'ID',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: EdgeInsets.all(12),
-                                child: Text(
-                                  'Product',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: EdgeInsets.all(12),
-                                child: Text(
-                                  'Shelf',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: EdgeInsets.all(12),
-                                child: Text(
-                                  'Qty',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: EdgeInsets.all(12),
-                                child: Text(
-                                  'Stock',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          const CircleAvatar(
+                            radius: 26,
+                            child: Icon(Icons.local_shipping),
                           ),
-
-                          ...items.map(
-                            (item) {
-                              final bool isShortage =
-                                  item.shortageQuantity > 0;
-
-                              return TableRow(
-                                decoration: BoxDecoration(
-                                  color: isShortage
-                                      ? Colors.red.shade50
-                                      : null,
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Ready to Pick",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
                                 ),
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Text(item.productId),
-                                  ),
-
-                                  Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          item.productName,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-
-                                        if (isShortage)
-                                          Text(
-                                            'Thiếu ${item.shortageQuantity} sản phẩm',
-                                            style: const TextStyle(
-                                              color: Colors.red,
-                                              fontSize: 11,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Text(
-                                      item.shelfLocation,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-
-                                  Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Text(
-                                      item.totalQuantity.toString(),
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: isShortage
-                                            ? Colors.red
-                                            : Colors.black,
-                                      ),
-                                    ),
-                                  ),
-
-                                  Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Text(
-                                      item.stockQuantity.toString(),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
+                                const SizedBox(height: 4),
+                                Text(
+                                  "${items.length} Products • $totalQty Items",
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
-                  )
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  const Text(
+                    "Picking List",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  if (items.isEmpty)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 50,
+                        ),
+                        child: Column(
+                          children: const [
+                            Icon(
+                              Icons.inventory_2_outlined,
+                              size: 60,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(height: 12),
+                            Text(
+                              "No Products To Pick",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 6),
+                            Text(
+                              "All orders have been completed.",
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  ...items.map((item) {
+                    final shortage =
+                        item.shortageQuantity > 0;
+
+                    return Card(
+                      margin:
+                          const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(16),
+                        side: shortage
+                            ? BorderSide(
+                                color: Colors.red.shade300,
+                              )
+                            : BorderSide.none,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+
+                            Row(
+                              children: [
+
+                                Expanded(
+                                  child: Text(
+                                    item.productId,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight:
+                                          FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+
+                                Chip(
+                                  avatar:
+                                      const Icon(Icons.place,
+                                          size: 18),
+                                  label: Text(
+                                    item.shelfLocation,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 4),
+
+                            Text(
+                              item.productName,
+                              style: const TextStyle(
+                                color: Colors.grey,
+                              ),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            Row(
+                              children: [
+
+                                Expanded(
+                                  child: Container(
+                                    padding:
+                                        const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.shade50,
+                                      borderRadius:
+                                          BorderRadius.circular(
+                                              12),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        const Text(
+                                          "Need",
+                                        ),
+                                        const SizedBox(
+                                            height: 4),
+                                        Text(
+                                          item.totalQuantity
+                                              .toString(),
+                                          style:
+                                              const TextStyle(
+                                            fontSize: 22,
+                                            fontWeight:
+                                                FontWeight
+                                                    .bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(width: 12),
+
+                                Expanded(
+                                  child: Container(
+                                    padding:
+                                        const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: shortage
+                                          ? Colors.red.shade50
+                                          : Colors.green
+                                              .shade50,
+                                      borderRadius:
+                                          BorderRadius.circular(
+                                              12),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        const Text(
+                                          "Stock",
+                                        ),
+                                        const SizedBox(
+                                            height: 4),
+                                        Text(
+                                          item.stockQuantity
+                                              .toString(),
+                                          style:
+                                              TextStyle(
+                                            fontSize: 22,
+                                            fontWeight:
+                                                FontWeight
+                                                    .bold,
+                                            color: shortage
+                                                ? Colors.red
+                                                : Colors.green,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            if (shortage) ...[
+                              const SizedBox(height: 12),
+
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.warning_amber,
+                                    color: Colors.red,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "Shortage: ${item.shortageQuantity}",
+                                    style:
+                                        const TextStyle(
+                                      color: Colors.red,
+                                      fontWeight:
+                                          FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ]
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
                 ],
               ),
             ),

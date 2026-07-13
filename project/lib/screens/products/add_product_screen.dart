@@ -160,7 +160,7 @@ class _AddProductScreenState
 
             TextFormField(
               controller: idController,
-              enabled: widget.product == null,
+              readOnly: widget.product == null,
               decoration: buildDecoration(
                 'Product ID',
               ),
@@ -205,28 +205,10 @@ class _AddProductScreenState
             const SizedBox(height: 16),
 
             TextFormField(
-              controller:
-                  quantityController,
-              keyboardType:
-                  TextInputType.number,
-              decoration:
-                  buildDecoration(
-                'Quantity',
-              ),
-              validator: (value) {
-                if (value == null ||
-                    value.isEmpty) {
-                  return 'Required';
-                }
-
-                if (int.tryParse(
-                        value) ==
-                    null) {
-                  return 'Invalid number';
-                }
-
-                return null;
-              },
+              controller: quantityController,
+              readOnly: true,
+              enableInteractiveSelection: false,
+              decoration: buildDecoration('Quantity'),
             ),
 
             const SizedBox(height: 16),
